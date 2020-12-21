@@ -1,6 +1,7 @@
 package com.example.contacts.ui
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.widget.Toast
@@ -21,17 +22,19 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        requestPermissions(arrayOf(Manifest.permission.READ_CONTACTS), 1)
-        if (checkPermission()) {
+        if (!checkPermissionContacts()) {
+            requestPermissions(arrayOf(Manifest.permission.READ_CONTACTS), 1)
+        }
+        else
+        {
+            if (!checkPermissionSms()) {
+                requestPermissions(arrayOf(Manifest.permission.SEND_SMS), 2)
+            }
             setContentView(R.layout.activity_main)
             contacts = applicationContext.fetchAllContacts()
             initRecyclerView()
             val text = resources.getText(R.string.info)
-            Toast.makeText(this,"${contacts.size} " + text, Toast.LENGTH_LONG).show()
-        }
-        else
-        {
-            Toast.makeText(this, "Нет доступа!!!", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "${contacts.size} " + text, Toast.LENGTH_LONG).show()
         }
     }
 
@@ -44,7 +47,37 @@ class MainActivity : AppCompatActivity() {
         rv.adapter = adapter
     }
 
-    private fun checkPermission() : Boolean {
-        return ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED
+    private fun checkPermissionContacts() : Boolean = ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED
+
+
+    private fun checkPermissionSms() : Boolean = ContextCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED
+
+    override fun onRequestPermissionsResult(requestCode: Int,
+                                            permissions: Array<String>, grantResults: IntArray) {
+        when (requestCode) {
+            1 -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    setContentView(R.layout.activity_main)
+                    contacts = applicationContext.fetchAllContacts()
+                    if (!checkPermissionSms()) {
+                        requestPermissions(arrayOf(Manifest.permission.SEND_SMS), 2)
+                    }
+                    initRecyclerView()
+                }
+                else {
+                    setContentView(R.layout.activity_main)
+                    Toast.makeText(this, "Нет доступа к списку контактов", Toast.LENGTH_LONG).show()
+                }
+
+            }
+            2 -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                }
+                else {
+                    Toast.makeText(this, "Без данного доступа вы не сможете отпрвить сообщение", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
     }
+
 }
